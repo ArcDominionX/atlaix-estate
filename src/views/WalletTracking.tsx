@@ -234,8 +234,8 @@ export const WalletTracking: React.FC = () => {
 
     if (viewMode === 'profile') {
         const allAssets = portfolioData?.assets || [];
-        const highValueAssets = allAssets.filter(a => a.rawValue >= 1);
-        const dustAssets = allAssets.filter(a => a.rawValue < 1);
+        const highValueAssets = allAssets.filter(a => a.rawValue >= 0.1);
+        const dustAssets = allAssets.filter(a => a.rawValue < 0.1);
         
         const displayAssets = showDust ? allAssets : highValueAssets;
         
@@ -352,7 +352,7 @@ export const WalletTracking: React.FC = () => {
                                                             {showDust ? (
                                                                 <>Show Less <ChevronUp size={14} /></>
                                                             ) : (
-                                                                <>See {dustAssets.length} &lt;$1 Tokens <ChevronDown size={14} /></>
+                                                                <>See {dustAssets.length} &lt;$0.1 Tokens <ChevronDown size={14} /></>
                                                             )}
                                                         </button>
                                                     </td>
