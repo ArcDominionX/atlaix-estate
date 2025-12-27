@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ViewState } from '../types';
 import { 
   LayoutDashboard, Users, Target, Activity, Radar, Flame, MessageSquare, 
-  Wallet, Zap, ShieldCheck, Bell, Settings, LogOut, Menu, User 
+  Wallet, Zap, ShieldCheck, Bell, Settings, LogOut, LogIn, Menu, User 
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -10,6 +10,8 @@ interface LayoutProps {
   currentView: ViewState;
   onViewChange: (view: ViewState) => void;
   onLogout: () => void;
+  isAuthenticated: boolean;
+  onLogin: () => void;
 }
 
 const NavItem: React.FC<{ 
@@ -42,7 +44,7 @@ const NavItem: React.FC<{
   </button>
 );
 
-export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange, onLogout }) => {
+export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewChange, onLogout, isAuthenticated, onLogin }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -137,16 +139,25 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
           <NavItem active={currentView === 'settings'} onClick={() => handleViewChange('settings')} icon={<Settings size={20} />} label="Settings" />
           
           <div className="mt-4 pt-4 border-t border-border">
-            <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-card transition-colors cursor-pointer" onClick={onLogout}>
-                <div className="w-8 h-8 rounded-full bg-primary-purple flex items-center justify-center text-xs font-bold text-white">
-                  A
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-text-light truncate">Atlaix User</div>
-                  <div className="text-[10px] text-text-medium">Free Plan</div>
-                </div>
-                <LogOut size={18} className="text-text-medium hover:text-primary-red transition-colors" />
-            </div>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-card transition-colors cursor-pointer" onClick={onLogout}>
+                  <div className="w-8 h-8 rounded-full bg-primary-purple flex items-center justify-center text-xs font-bold text-white">
+                    A
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-text-light truncate">Atlaix User</div>
+                    <div className="text-[10px] text-text-medium">Free Plan</div>
+                  </div>
+                  <LogOut size={18} className="text-text-medium hover:text-primary-red transition-colors" />
+              </div>
+            ) : (
+              <button 
+                onClick={onLogin}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-primary-green/10 border border-primary-green/20 text-primary-green font-bold hover:bg-primary-green hover:text-main transition-all"
+              >
+                <LogIn size={18} /> Sign In
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -174,39 +185,48 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onViewCha
           </div>
           
           <div className="flex items-center gap-4 flex-shrink-0">
-             <div className="relative">
-                <button 
-                  className="w-11 h-11 rounded-full bg-card border border-border flex items-center justify-center text-text-medium hover:text-text-light hover:bg-card-hover transition-colors"
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                >
-                  <User size={22} />
-                </button>
-                
-                {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 top-14 w-72 bg-card border border-border rounded-xl shadow-2xl p-2 z-50 animate-fade-in">
-                      <div className="flex items-center gap-3 p-3 border-b border-border mb-2">
-                        <div className="w-10 h-10 rounded-full bg-primary-purple flex items-center justify-center font-bold text-white text-lg">A</div>
-                        <div>
-                          <div className="font-bold text-base">Atlaix User</div>
-                          <div className="text-xs text-text-medium">user@example.com</div>
+             {isAuthenticated ? (
+               <div className="relative">
+                  <button 
+                    className="w-11 h-11 rounded-full bg-card border border-border flex items-center justify-center text-text-medium hover:text-text-light hover:bg-card-hover transition-colors"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  >
+                    <User size={22} />
+                  </button>
+                  
+                  {userMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-14 w-72 bg-card border border-border rounded-xl shadow-2xl p-2 z-50 animate-fade-in">
+                        <div className="flex items-center gap-3 p-3 border-b border-border mb-2">
+                          <div className="w-10 h-10 rounded-full bg-primary-purple flex items-center justify-center font-bold text-white text-lg">A</div>
+                          <div>
+                            <div className="font-bold text-base">Atlaix User</div>
+                            <div className="text-xs text-text-medium">user@example.com</div>
+                          </div>
                         </div>
+                        <button className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-text-light rounded-lg flex items-center gap-3">
+                          <User size={18} /> Profile
+                        </button>
+                        <div className="h-px bg-border my-2" />
+                        <button onClick={() => { handleViewChange('settings'); setUserMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-text-light rounded-lg flex items-center gap-3">
+                          <Settings size={18} /> Settings
+                        </button>
+                        <button onClick={onLogout} className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-primary-red rounded-lg flex items-center gap-3">
+                          <LogOut size={18} /> Logout
+                        </button>
                       </div>
-                      <button className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-text-light rounded-lg flex items-center gap-3">
-                        <User size={18} /> Profile
-                      </button>
-                      <div className="h-px bg-border my-2" />
-                      <button onClick={() => { handleViewChange('settings'); setUserMenuOpen(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-text-light rounded-lg flex items-center gap-3">
-                        <Settings size={18} /> Settings
-                      </button>
-                      <button onClick={onLogout} className="w-full text-left px-4 py-3 text-sm font-medium text-text-medium hover:bg-card-hover hover:text-primary-red rounded-lg flex items-center gap-3">
-                        <LogOut size={18} /> Login / Switch
-                      </button>
-                    </div>
-                  </>
-                )}
-             </div>
+                    </>
+                  )}
+               </div>
+             ) : (
+                <button 
+                  onClick={onLogin}
+                  className="px-6 py-2.5 rounded-lg bg-primary-green text-main font-bold text-sm hover:bg-primary-green-light transition-colors shadow-lg shadow-primary-green/20"
+                >
+                  Connect / Sign In
+                </button>
+             )}
           </div>
         </header>
 

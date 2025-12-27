@@ -2,13 +2,22 @@ import React, { useState } from 'react';
 
 interface AuthScreenProps {
     onLogin: () => void;
+    onSkip?: () => void;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onSkip }) => {
     const [mode, setMode] = useState<'login' | 'signup'>('login');
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-main animate-fade-in text-center">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-main animate-fade-in text-center relative">
+            {onSkip && (
+                <div className="absolute top-6 right-6">
+                    <button onClick={onSkip} className="text-text-medium hover:text-text-light font-bold text-sm transition-colors flex items-center gap-1 group">
+                        Skip for now <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                    </button>
+                </div>
+            )}
+
             <div className="flex items-center gap-3 text-3xl font-bold mb-2">
                 <img 
                     src="./logo.png" 

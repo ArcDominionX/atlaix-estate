@@ -24,7 +24,7 @@ const PlaceholderView = ({ title }: { title: string }) => (
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentView, setCurrentView] = useState<ViewState>('auth');
+  const [currentView, setCurrentView] = useState<ViewState>('overview');
   const [selectedToken, setSelectedToken] = useState<MarketCoin | string | null>(null);
   const [selectedDetectionToken, setSelectedDetectionToken] = useState<string | null>(null);
 
@@ -35,8 +35,12 @@ export default function App() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    setCurrentView('auth');
+    setCurrentView('overview'); // Stay on overview as guest
     setSelectedToken(null);
+  };
+
+  const handleAuthRequest = () => {
+    setCurrentView('auth');
   };
 
   const handleTokenSelect = (token: MarketCoin | string) => {
@@ -92,8 +96,8 @@ export default function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <AuthScreen onLogin={handleLogin} />;
+  if (currentView === 'auth') {
+    return <AuthScreen onLogin={handleLogin} onSkip={() => setCurrentView('overview')} />;
   }
 
   return (
@@ -101,6 +105,8 @@ export default function App() {
       currentView={currentView}
       onViewChange={setCurrentView}
       onLogout={handleLogout}
+      isAuthenticated={isAuthenticated}
+      onLogin={handleAuthRequest}
     >
       {renderView()}
     </Layout>
