@@ -322,8 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTokenSelect }) => {
                         <table className="data-table">
                             <thead>
                                 <tr>
-                                    <SortHeader label="Chain Token" sortKey="ticker" minWidth="160px" />
-                                    <SortHeader label="Age" sortKey="createdTimestamp" minWidth="80px" />
+                                    <SortHeader label="Chain Token" sortKey="ticker" minWidth="130px" />
                                     <SortHeader label="Price" sortKey="price" />
                                     <SortHeader label="Chg 24h" sortKey="change" minWidth="80px" rightAlign />
                                     <SortHeader label="MCap" sortKey="cap" rightAlign />
@@ -351,19 +350,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onTokenSelect }) => {
                                             className="cursor-pointer hover:bg-card-hover/50 transition-colors"
                                         >
                                             <td className="sticky-col">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 w-[130px] max-w-[130px] overflow-hidden">
                                                     <div className="w-5 h-5 flex items-center justify-center bg-card-hover rounded-full border border-border/50 shrink-0">
                                                         <img src={getChainIcon(coin.chain)} alt={coin.chain} className="w-3.5 h-3.5 opacity-80" />
                                                     </div>
                                                     <img src={coin.img} alt={coin.name} width="24" height="24" className="rounded-full shrink-0 object-cover bg-card" onError={handleImageError} />
-                                                    <div className="flex flex-col">
-                                                        <div className="font-bold text-xs leading-none text-text-light">{coin.ticker}</div>
-                                                        <div className="text-[9px] text-text-dark font-medium leading-tight mt-0.5">{coin.name}</div>
+                                                    <div className="flex flex-col min-w-0 flex-1">
+                                                        <div className="font-bold text-xs leading-none text-text-light truncate" title={coin.ticker}>{coin.ticker}</div>
+                                                        <div className="text-[9px] text-text-dark font-medium leading-tight mt-0.5 truncate" title={coin.name}>{coin.name}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             
-                                            <td className="font-medium text-xs text-text-light">{coin.age}</td>
                                             <td className="font-mono text-xs text-text-light font-medium">{coin.price}</td>
                                             <td className={`font-bold text-xs text-right ${getPercentColor(changeVal)}`}>{changeVal}</td>
                                             <td className="font-medium text-xs text-text-light text-right">{coin.cap}</td>
