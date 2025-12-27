@@ -1,4 +1,5 @@
 import { MoralisService, WalletBalance } from './MoralisService';
+import { DatabaseService } from './DatabaseService';
 
 export type ChainType = 'Solana' | 'Ethereum' | 'BSC' | 'Polygon' | 'Avalanche' | 'Base' | 'Arbitrum' | 'Optimism' | 'All Chains';
 
@@ -68,47 +69,68 @@ const fetchFromMoralis = async (chain: string, address: string): Promise<Portfol
     // 1. Fetch Real Balances
     const balances: WalletBalance[] = await MoralisService.getWalletBalances(address, chain);
     
-    // 2. Fetch Activity (Re-using token activity logic for general wallet activity is tricky without a specific token, 
-    // but we will simulate activity based on the balances found to keep the UI populated if no endpoint specific for wallet history is set up in MoralisService)
+    // 2. Identify tokens missing prices (Moralis sometimes doesn't have pricing for new pairs)
+    const missingPriceAddresses = balances
+        .filter(b => (!b.price_usd || b.price_usd === 0) && (!b.usd_value || b.usd_value === 0))
+        .map(b => b.token_address);
+        
+    // 3. Fetch missing prices from DexScreener Fallback
+    let dexPrices: Record<string, number> = {};
+    if (missingPriceAddresses.length > 0) {
+        dexPrices = await DatabaseService.getBulkPrices(missingPriceAddresses);
+    }
+    
+    // 4. Activity (Still waiting for endpoint logic or mock removal)
     
     let totalUsd = 0;
     const assets = balances.map(b => {
         const decimals = b.decimals || 18;
         const bal = parseFloat(b.balance) / Math.pow(10, decimals);
-        // Estimate price if missing (fallback logic)
-        const price = b.price_usd || (b.usd_value ? b.usd_value / bal : 0);
-        const value = b.usd_value || (bal * price);
+        
+        // Price Logic: Moralis Price -> DexScreener Price -> Derived -> 0
+        let price = b.price_usd || 0;
+        
+        if (price === 0 && dexPrices[b.token_address.toLowerCase()]) {
+            price = dexPrices[b.token_address.toLowerCase()];
+        }
+        
+        // If Moralis gave usd_value but no unit price (rare but possible), calc unit price
+        if (price === 0 && b.usd_value && b.usd_value > 0) {
+             price = b.usd_value / bal;
+        }
+        
+        // Final Value Calc
+        const value = (price > 0) ? (bal * price) : (b.usd_value || 0);
         
         totalUsd += value;
 
         return {
             symbol: b.symbol,
             balance: `${bal.toLocaleString(undefined, {maximumFractionDigits: 4})} ${b.symbol}`,
-            value: `$${value.toLocaleString(undefined, {maximumFractionDigits: 2})}`,
-            price: `$${price.toLocaleString(undefined, {maximumFractionDigits: 4})}`,
-            logo: b.logo || `https://ui-avatars.com/api/?name=${b.symbol}&background=random`
+            value: `$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            price: `$${price.toLocaleString(undefined, {maximumFractionDigits: 6})}`,
+            logo: b.logo || `https://ui-avatars.com/api/?name=${b.symbol}&background=random`,
+            rawVal: value
         };
-    }).sort((a, b) => parseFloat(b.value.replace('$','').replace(',','')) - parseFloat(a.value.replace('$','').replace(',','')));
+    }).sort((a, b) => b.rawVal - a.rawVal);
+
+    // Clean up internal rawVal property
+    const finalAssets = assets.map(({ rawVal, ...rest }) => rest);
 
     // Determine Chain Icon
     let chainIcon = 'https://cryptologos.cc/logos/ethereum-eth-logo.png';
     if (chain.toLowerCase() === 'solana') chainIcon = 'https://cryptologos.cc/logos/solana-sol-logo.png';
     if (chain.toLowerCase() === 'bsc') chainIcon = 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
 
-    // Mock recent activity based on real assets found (since we didn't add history endpoint to MoralisService to keep it simple)
-    const recentActivity = assets.slice(0, 3).map(a => ({
-        type: 'TRANSFER',
-        desc: `Interaction with ${a.symbol}`,
-        time: 'Recent',
-        hash: '0x...' + Math.random().toString(16).substr(2, 8)
-    }));
+    // No fake recent activity. If we don't have the endpoint connected, return empty.
+    const recentActivity: any[] = [];
 
     return {
         netWorth: `$${totalUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
         providerUsed: 'Moralis',
         timestamp: Date.now(),
         chainIcon: chainIcon,
-        assets: assets,
+        assets: finalAssets,
         recentActivity: recentActivity
     };
 };

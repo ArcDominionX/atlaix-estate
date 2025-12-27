@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, Zap, ArrowLeft, RefreshCw, ArrowUpRight, ArrowDownLeft, Repeat, CheckCircle } from 'lucide-react';
+import { Search, ChevronDown, Zap, ArrowLeft, RefreshCw, ArrowUpRight, ArrowDownLeft, Repeat, CheckCircle, AlertTriangle } from 'lucide-react';
 import { ChainRouter, PortfolioData } from '../services/ChainRouter';
 
 declare var ApexCharts: any;
@@ -46,8 +46,8 @@ export const WalletTracking: React.FC = () => {
             addr: searchQuery,
             tag: 'Unknown',
             bal: 'Loading...',
-            pnl: '0%',
-            win: '0%',
+            pnl: 'N/A',
+            win: 'N/A',
             tokens: 0,
             time: 'Just now',
             type: 'smart'
@@ -107,18 +107,21 @@ export const WalletTracking: React.FC = () => {
 
     useEffect(() => {
         if (viewMode === 'profile' && netWorthChartRef.current && typeof ApexCharts !== 'undefined' && !loading) {
+            // NOTE: This chart data is currently static because we don't have historical net worth API.
+            // Leaving it as visual placeholder, but ideally this should also be N/A if no history exists.
             const options = {
-                series: [{ name: 'Net Worth', data: [4.2, 4.3, 4.1, 4.8, 5.2, 5.0, 5.5, 6.2, 5.8, 7.1, 8.2] }],
+                series: [{ name: 'Net Worth', data: [0, 0, 0, 0, 0, 0, 0, 0] }], // Reset to zero/flat to avoid fake data
                 chart: { type: 'area', height: 280, background: 'transparent', toolbar: { show: false }, zoom: { enabled: false } },
                 colors: ['#26D356'],
                 fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] } },
                 stroke: { curve: 'smooth', width: 2 },
                 dataLabels: { enabled: false },
-                xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], labels: { style: { colors: '#8F96A3', fontFamily: 'Inter', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-                yaxis: { labels: { style: { colors: '#8F96A3', fontFamily: 'Inter', fontSize: '11px' }, formatter: (val: number) => `$${val}M` } },
+                xaxis: { categories: [], labels: { style: { colors: '#8F96A3', fontFamily: 'Inter', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+                yaxis: { labels: { style: { colors: '#8F96A3', fontFamily: 'Inter', fontSize: '11px' }, formatter: (val: number) => `$${val}` } },
                 grid: { borderColor: '#2A2E33', strokeDashArray: 4 },
                 theme: { mode: 'dark' },
-                tooltip: { theme: 'dark' }
+                tooltip: { theme: 'dark' },
+                noData: { text: 'History N/A', style: { color: '#8F96A3' } }
             };
             if (chartInstance.current) { chartInstance.current.destroy(); }
             chartInstance.current = new ApexCharts(netWorthChartRef.current, options);
@@ -256,7 +259,7 @@ export const WalletTracking: React.FC = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div className="bg-card border border-border rounded-xl p-5 text-center">
                                 <h5 className="text-text-medium text-[10px] font-bold uppercase tracking-wide mb-1">Total Net Worth</h5>
-                                <p className="text-text-light font-bold text-lg">{portfolioData?.netWorth || selectedWallet?.bal}</p>
+                                <p className="text-text-light font-bold text-lg">{portfolioData?.netWorth || 'N/A'}</p>
                             </div>
                             <div className="bg-card border border-border rounded-xl p-5 text-center">
                                 <h5 className="text-text-medium text-[10px] font-bold uppercase tracking-wide mb-1">Active Assets</h5>
@@ -264,16 +267,16 @@ export const WalletTracking: React.FC = () => {
                             </div>
                             <div className="bg-card border border-border rounded-xl p-5 text-center">
                                 <h5 className="text-text-medium text-[10px] font-bold uppercase tracking-wide mb-1">Profitable Trades</h5>
-                                <p className="text-primary-green font-bold text-lg">142</p>
+                                <p className="text-text-light font-bold text-lg">N/A</p>
                             </div>
                             <div className="bg-card border border-border rounded-xl p-5 text-center">
                                 <h5 className="text-text-medium text-[10px] font-bold uppercase tracking-wide mb-1">Avg Hold Time</h5>
-                                <p className="text-text-light font-bold text-lg">4.2 Days</p>
+                                <p className="text-text-light font-bold text-lg">N/A</p>
                             </div>
                         </div>
 
                         <div className="bg-card border border-border rounded-xl p-6">
-                            <h3 className="card-title text-base">Net Worth Performance</h3>
+                            <h3 className="card-title text-base">Net Worth Performance (History N/A)</h3>
                             <div ref={netWorthChartRef} className="w-full min-h-[260px]"></div>
                         </div>
 
@@ -285,18 +288,21 @@ export const WalletTracking: React.FC = () => {
                                         <thead>
                                             <tr className="border-b border-border text-text-dark text-[10px] font-bold uppercase tracking-wide">
                                                 <th className="pb-3 font-bold">Asset</th>
-                                                <th className="pb-3 font-bold">Value</th>
                                                 <th className="pb-3 font-bold">Balance</th>
+                                                <th className="pb-3 font-bold">Value</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            {portfolioData?.assets.length === 0 && (
+                                                <tr><td colSpan={3} className="py-4 text-center text-text-medium text-xs">No assets found</td></tr>
+                                            )}
                                             {portfolioData?.assets.map((p, i) => (
                                                 <tr key={i} className="border-b border-border last:border-0 hover:bg-card-hover/50 transition-colors">
                                                     <td className="py-3 font-bold flex items-center gap-2">
                                                         <img src={p.logo} className="w-6 h-6 rounded-full" onError={(e) => e.currentTarget.src='https://via.placeholder.com/24'} /> {p.symbol}
                                                     </td>
-                                                    <td className="py-3">{p.value}</td>
                                                     <td className="py-3 text-text-medium font-medium">{p.balance}</td>
+                                                    <td className="py-3 text-text-light font-bold">{p.value}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -307,6 +313,12 @@ export const WalletTracking: React.FC = () => {
                             <div className="bg-card border border-border rounded-xl p-6 flex flex-col">
                                 <h3 className="card-title text-base">Recent Activity</h3>
                                 <div className="flex flex-col">
+                                    {(!portfolioData?.recentActivity || portfolioData.recentActivity.length === 0) && (
+                                        <div className="flex flex-col items-center justify-center py-8 text-text-medium opacity-70">
+                                            <AlertTriangle size={24} className="mb-2" />
+                                            <span className="text-xs">No activity found</span>
+                                        </div>
+                                    )}
                                     {portfolioData?.recentActivity.map((act, i) => (
                                         <div key={i} className="flex gap-4 py-4 border-b border-border last:border-0">
                                             <div className="w-10 h-10 bg-main rounded-full flex items-center justify-center text-primary-green shrink-0"><Zap size={20} /></div>
@@ -336,28 +348,11 @@ export const WalletTracking: React.FC = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {[
-                                                { type: 'Swap', icon: <Repeat size={14} />, hash: '0x3a...11f', val: '-150 SOL', asset: '+25k USDC', time: '5m ago', color: 'text-primary-yellow' },
-                                                { type: 'Transfer', icon: <ArrowUpRight size={14} />, hash: '0x9f...32a', val: '-500 USDC', asset: '', time: '20m ago', color: 'text-primary-red' },
-                                                { type: 'Receive', icon: <ArrowDownLeft size={14} />, hash: '0x1c...99b', val: '+2000 JUP', asset: '', time: '1h ago', color: 'text-primary-green' },
-                                                { type: 'Swap', icon: <Repeat size={14} />, hash: '0x7d...a44', val: '-5000 JUP', asset: '+50 SOL', time: '2h ago', color: 'text-primary-yellow' },
-                                                { type: 'Approve', icon: <CheckCircle size={14} />, hash: '0x4b...91c', val: 'Unlimited', asset: 'USDC', time: '5h ago', color: 'text-text-light' },
-                                                { type: 'Mint', icon: <Zap size={14} />, hash: '0x88...12c', val: 'NFT #4201', asset: '', time: '1d ago', color: 'text-primary-purple' },
-                                            ].map((tx, i) => (
-                                                <tr key={i} className="group hover:bg-card-hover/30 transition-colors cursor-default">
-                                                    <td className="py-2 pr-2">
-                                                        <div className="flex items-center gap-2 font-medium text-text-light">
-                                                            <div className={`w-6 h-6 rounded-md bg-main border border-border flex items-center justify-center ${tx.color.replace('text-', 'text-opacity-80 text-')}`}>{tx.icon}</div>
-                                                            {tx.type}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-2 pr-2 font-mono text-xs text-primary-blue hover:underline cursor-pointer">{tx.hash}</td>
-                                                    <td className="py-2 pr-2">
-                                                        <div className="flex flex-col"><span className={`text-xs font-bold ${tx.val.startsWith('-') ? 'text-text-light' : 'text-primary-green'}`}>{tx.val}</span>{tx.asset && <span className="text-[10px] text-text-medium">{tx.asset}</span>}</div>
-                                                    </td>
-                                                    <td className="py-2 text-xs text-text-dark font-medium whitespace-nowrap">{tx.time}</td>
-                                                </tr>
-                                            ))}
+                                            <tr>
+                                                <td colSpan={4} className="text-center py-6 text-text-medium text-xs font-medium">
+                                                    N/A - Transaction history not available
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>

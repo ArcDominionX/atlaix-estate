@@ -311,6 +311,49 @@ export const DatabaseService = {
         }
     },
 
+    /**
+     * Bulk fetch prices for token addresses via DexScreener.
+     * Used for wallet tracking valuation when Moralis prices are missing.
+     */
+    getBulkPrices: async (tokenAddresses: string[]): Promise<Record<string, number>> => {
+        if (!tokenAddresses.length) return {};
+        
+        try {
+            // Chunk into 30s as DexScreener limits tokens endpoint to 30 addresses
+            const chunks = [];
+            for (let i = 0; i < tokenAddresses.length; i += 30) {
+                chunks.push(tokenAddresses.slice(i, i + 30));
+            }
+
+            const results = await Promise.all(chunks.map(async chunk => {
+                const url = `https://api.dexscreener.com/latest/dex/tokens/${chunk.join(',')}`;
+                const res = await fetch(url);
+                if (!res.ok) return { pairs: [] };
+                return res.json();
+            }));
+
+            const priceMap: Record<string, number> = {};
+            
+            results.forEach((data: any) => {
+                if (!data || !data.pairs) return;
+                data.pairs.forEach((pair: any) => {
+                    const addr = pair.baseToken.address.toLowerCase();
+                    // If we don't have a price yet, or this pair has better liquidity/is USD based, use it.
+                    // For MVP simplicity, we just use the first valid priceUsd we find for this token.
+                    if (!priceMap[addr] && pair.priceUsd) {
+                         priceMap[addr] = parseFloat(pair.priceUsd);
+                    }
+                });
+            });
+            
+            return priceMap;
+
+        } catch (e) {
+            console.error("DexScreener Price Fetch Error", e);
+            return {};
+        }
+    },
+
     transformPair: (pair: DexPair, index: number = 0): MarketCoin => {
         const buys = pair.txns?.h24?.buys || 0;
         const sells = pair.txns?.h24?.sells || 0;
