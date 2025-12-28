@@ -1,3 +1,4 @@
+
 import { MarketCoin } from '../types';
 import { createClient } from '@supabase/supabase-js';
 import { APP_CONFIG } from '../config';
@@ -11,7 +12,7 @@ const DEXSCREENER_PAIRS_URL = 'https://api.dexscreener.com/latest/dex/pairs';
 // --- REQUIREMENTS ---
 // Relaxed filters to ensure rapid population of 100+ tokens
 const REQUIREMENTS = {
-    MIN_LIQUIDITY_USD: 50000,    
+    MIN_LIQUIDITY_USD: 100000,    
     MIN_VOLUME_24H: 500,       
     MIN_TXNS_24H: 5,            
     MIN_FDV: 1000,
